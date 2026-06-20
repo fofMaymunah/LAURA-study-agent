@@ -8,7 +8,7 @@ import json
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-SYSTEM_PROMPT = """You are LAURA, an intelligent study planning agent.
+SYSTEM_PROMPT = """You are LAURA, an intelligent study planning agent created by Fofana Maimouna, a software engineer and AI enthusiast.
 Your job is to help users learn any subject by:
 1. Searching for the best learning resources
 2. Reading and evaluating those resources
@@ -25,7 +25,10 @@ forcing irrelevant resources into the plan.
 NEVER invent or assume fake resources, titles, or content that wasn't actually
 given to you. If no real resources were found, explicitly say so and use your
 own training knowledge instead. Do not write phrases like "assuming the
-resources are..." — only describe what is real."""
+resources are..." — only describe what is real.
+If asked who created you or who you are, mention that you were built by
+Fofana Maimouna as an AI study planning agent.
+"""
 
 
 def build_search_query(subject: str) -> str:
@@ -47,18 +50,18 @@ def run_agent(subject: str, duration: str, level: str, progress_callback=None) -
 
     # ── Step 1: Search ──────────────────────────────────────
     if progress_callback:
-        progress_callback(f"🔍 Searching for {subject} resources...")
+        progress_callback(f"Searching for {subject} resources...")
 
     query = build_search_query(subject)
     if progress_callback:
-        progress_callback(f"🔍 Search query: {query}")
+        progress_callback(f" Search query: {query}")
 
     raw_results = search_web(query, max_results=8)
     search_results = [r for r in raw_results if is_relevant(subject, r)]
 
     if not search_results:
         if progress_callback:
-            progress_callback("⚠️ First search too vague, trying again...")
+            progress_callback(" First search too vague, trying again...")
         query = f"how to learn {subject}"
         raw_results = search_web(query, max_results=8)
         search_results = [r for r in raw_results if is_relevant(subject, r)]
@@ -67,7 +70,7 @@ def run_agent(subject: str, duration: str, level: str, progress_callback=None) -
         search_results = raw_results[:5]  # last resort fallback
 
     if progress_callback:
-        progress_callback(f"✅ Found {len(search_results)} resources")
+        progress_callback(f"Found {len(search_results)} resources")
 
     # ── Step 2: Read top 3 resources ────────────────────────
     read_contents = []
@@ -77,7 +80,7 @@ def run_agent(subject: str, duration: str, level: str, progress_callback=None) -
             continue
 
         if progress_callback:
-            progress_callback(f"📖 Reading resource {idx + 1}/3: {resource['title']}")
+            progress_callback(f"Reading resource {idx + 1}/3: {resource['title']}")
 
         content = read_webpage(url)
         read_contents.append({
@@ -87,14 +90,14 @@ def run_agent(subject: str, duration: str, level: str, progress_callback=None) -
         })
 
     if progress_callback:
-        progress_callback(f"📊 Resources actually read: {len(read_contents)}")
+        progress_callback(f" Resources actually read: {len(read_contents)}")
         for item in read_contents:
-            progress_callback(f"   ✓ {item['title'][:60]}")
+            progress_callback(f"    {item['title'][:60]}")
 
     # ── Step 3: Build context block (hard stop if empty) ───
     if not read_contents:
         if progress_callback:
-            progress_callback("⚠️ No resources could be read — using LLM knowledge only")
+            progress_callback(" No resources could be read — using LLM knowledge only")
         context_block = "NO EXTERNAL RESOURCES WERE FOUND OR COULD BE READ."
     else:
         context_block = ""
@@ -102,7 +105,7 @@ def run_agent(subject: str, duration: str, level: str, progress_callback=None) -
             context_block += f"\n\n--- Resource {i}: {item['title']} ({item['url']}) ---\n{item['content']}"
 
     if progress_callback:
-        progress_callback("🧠 LAURA is now writing your study plan...")
+        progress_callback("LAURA is now writing your study plan...")
 
     # ── Step 4: Generate the plan ───────────────────────────
     messages = [
@@ -137,7 +140,7 @@ create a detailed day-by-day study plan structured week by week.
     final_plan = response.choices[0].message.content
 
     if progress_callback:
-        progress_callback("✦ Study plan ready!")
+        progress_callback("Study plan ready!")
 
     # ── Step 5: Append resource list ────────────────────────
     resource_list = create_study_plan(subject, duration, level, search_results[:5])
