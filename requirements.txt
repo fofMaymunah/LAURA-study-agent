@@ -1,0 +1,10 @@
+gradio
+groq
+python-dotenv
+langchain
+langchain-community
+langchain-groq
+duckduckgo-search
+fpdf2
+requests
+beautifulsoup4
